@@ -138,6 +138,11 @@ def create_sample_package(path: Path, package_name: str, dir_contents: NestedMap
 # endregion
 
 
+# ============================================================================
+# region -------- Tests --------
+# ============================================================================
+
+
 @pytest.mark.parametrize(
     ("dotted_name", "start", "expected"),
     [
@@ -1146,3 +1151,6 @@ with defer_imports.until_use():
         from inspect import signature
 
         assert results == [signature] * num_threads
+
+
+# endregion

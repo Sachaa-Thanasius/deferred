@@ -39,6 +39,7 @@ with _lazy_load.until_module_use():
 
 TYPE_CHECKING = False
 
+
 # PYUPDATE: Check that these are consistent with upstream.
 if TYPE_CHECKING:
 
@@ -141,18 +142,10 @@ else:  # pragma: <3.10 cover
     _SyntaxContext: TypeAlias = "tuple[t.Optional[str], t.Optional[int], t.Optional[int], t.Optional[str]]"
 
 
-# compile()'s internals, and thus wrappers of it (e.g. ast.parse()), dropped support in 3.12 for non-bytes buffers as
-# the filename argument.
-# Ref: https://github.com/python/cpython/issues/98393
-if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
-    _ModulePath: TypeAlias = "t.Union[str, os.PathLike[str], bytes]"
-else:  # pragma: <3.12 cover
-    _ModulePath: TypeAlias = "t.Union[str, os.PathLike[str], ReadableBuffer]"
-
-
 # endregion
 
 
+_ModulePath: TypeAlias = "t.Union[str, os.PathLike[str], bytes]"
 _SourceData: TypeAlias = "t.Union[ReadableBuffer, str]"
 
 
@@ -421,10 +414,9 @@ class _ImportsInstrumenter(ast.NodeTransformer):
         .. [1] https://docs.python.org/3.14/library/exceptions.html#SyntaxError
         """
 
-        filepath = self.filepath if isinstance(self.filepath, (str, bytes, os.PathLike)) else bytes(self.filepath)
         source = self.source if isinstance(self.source, str) else _decode_source(self.source)
         text = _get_joined_source_lines(source, node)
-        context = (os.fsdecode(filepath), node.lineno, node.col_offset + 1, text)
+        context = (os.fsdecode(self.filepath), node.lineno, node.col_offset + 1, text)
 
         if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
             end_col_offset = node.end_col_offset
@@ -558,9 +550,9 @@ def _walk_globals(node: ast.AST) -> t.Generator[ast.AST, None, None]:
 class _DIFileLoader(SourceFileLoader):
     """A file loader that instruments ``.py`` files which use ``with defer_imports.until_use(): ...``."""
 
-    # NOTE: In 3.12+, the path parameter should only accept bytes, not any buffer.
-    # Ref: https://github.com/python/typeshed/issues/13881
     # NOTE: We're purposefully not supporting data being an AST object, as that's not the use case for this method.
+    # NOTE: The path parameter will only accept bytes, not any buffer, once type-checkers get the updated typeshed.
+    # Ref: https://github.com/python/typeshed/pull/14847
     def source_to_code(self, data: _SourceData, path: _ModulePath, *, _optimize: int = -1) -> types.CodeType:  # pyright: ignore [reportIncompatibleMethodOverride]
         """Compile the source `data` into a code object, possibly instrumenting it along the way.
 
@@ -587,9 +579,9 @@ class _DIFileLoader(SourceFileLoader):
 
     def get_code(self, fullname: str) -> types.CodeType:  # noqa: PLR0912, PLR0915
         source_path = self.get_filename(fullname)
-        source_mtime = None
-        source_bytes = None
-        source_hash = None
+        source_mtime: int | None = None
+        source_bytes: bytes | None = None
+        source_hash: bytes | None = None
         hash_based = False
         check_source = True
 
@@ -652,6 +644,7 @@ class _DIFileLoader(SourceFileLoader):
                 data = _code_to_hash_pyc(code_object, source_hash, check_source)
             else:
                 data = _code_to_timestamp_pyc(code_object, source_mtime, len(source_bytes))
+
             try:
                 self._cache_bytecode(source_path, bytecode_path, data)  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
             except NotImplementedError:
