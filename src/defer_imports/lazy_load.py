@@ -235,7 +235,7 @@ class LazyLoader(_Loader):
         self.__check_eager_loader(loader)
         self.loader = loader
 
-    def create_module(self, spec: _ModuleSpec) -> _t.Optional[_types.ModuleType]:
+    def create_module(self, spec: _ModuleSpec) -> _types.ModuleType | None:
         return self.loader.create_module(spec)
 
     def exec_module(self, module: _types.ModuleType) -> None:
@@ -281,9 +281,9 @@ class _LazyFinder:
     def find_spec(
         self,
         name: str,
-        path: _t.Optional[_t.Sequence[str]] = None,
-        target: _t.Optional[_types.ModuleType] = None,
-    ) -> _t.Optional[_ModuleSpec]:
+        path: _t.Sequence[str] | None = None,
+        target: _types.ModuleType | None = None,
+    ) -> _ModuleSpec | None:
         spec = self._finder.find_spec(name, path, target)
 
         # Only be lazy for source modules to avoid issues with extension modules having uninitialized state,
