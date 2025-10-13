@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "defer-imports"
 description = "Lazy imports with regular syntax in pure Python."
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE*"]
 readme = { file = "README.rst", content-type = "text/x-rst" }
@@ -197,7 +197,7 @@ convention = "numpy"
 include = ["src/defer_imports", "tests"]
 ignore = ["tests/*.py"]
 
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "strict"
 
